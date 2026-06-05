@@ -4,4 +4,5 @@ public interface IProductsService
 {
     Task<IReadOnlyCollection<Product>> GetProducts();
     Task<Product?> GetProduct(int id);
+    Task<Product?> CreateProduct(CreateProductRequest request);
 }

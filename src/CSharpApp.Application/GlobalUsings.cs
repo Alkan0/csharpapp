@@ -7,3 +7,4 @@ global using CSharpApp.Core.Settings;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
 global using System.Net;
+global using System.Net.Http.Json;

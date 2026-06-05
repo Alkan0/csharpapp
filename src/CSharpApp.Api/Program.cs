@@ -24,12 +24,12 @@ if (app.Environment.IsDevelopment())
 var versionedEndpointRouteBuilder = app.NewVersionedApi();
 
 versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async (IProductsService productsService) =>
-    {
-        var products = await productsService.GetProducts();
-        return Results.Ok(products);
-    })
-    .WithName("GetProducts")
-    .HasApiVersion(1.0);
+{
+    var products = await productsService.GetProducts();
+    return Results.Ok(products);
+})
+.WithName("GetProducts")
+.HasApiVersion(1.0);
 
 versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int}", async (int id, IProductsService productsService) =>
 {
@@ -42,7 +42,25 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int
             detail: $"Product with id {id} was not found.")
         : Results.Ok(product);
 })
-    .WithName("GetProduct")
-    .HasApiVersion(1.0);
+.WithName("GetProduct")
+.HasApiVersion(1.0);
+
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", async (CreateProductRequest request, IProductsService productsService) =>
+{
+    try
+    {
+        var product = await productsService.CreateProduct(request);
+        return Results.Created($"api/v1/products/{product?.Id}", product);
+    }
+    catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+    {
+        return Results.Problem(
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Product creation failed",
+            detail: ex.Message);
+    }
+})
+.WithName("CreateProduct")
+.HasApiVersion(1.0);
 
 app.Run();
