@@ -20,8 +20,9 @@ public class ProductsService : IProductsService
         var response = await _httpClient.GetAsync(_restApiSettings.Products);
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
-        var res = JsonSerializer.Deserialize<List<Product>>(content);
-        
-        return res.AsReadOnly();
+        var products = JsonSerializer.Deserialize<List<Product>>(content) 
+            ?? throw new InvalidOperationException("Products API returned an empty or invalid response.");
+
+        return products.AsReadOnly();
     }
 }
