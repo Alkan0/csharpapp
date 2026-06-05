@@ -24,4 +24,21 @@ public class ProductsService : IProductsService
 
         return products.AsReadOnly();
     }
+
+    public async Task<Product?> GetProduct(int id)
+    {
+        var response = await _httpClient.GetAsync($"{_restApiSettings.Products}/{id}");
+
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
+        {
+            _logger.LogInformation("Product {ProductId} was not found", id);
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<Product>(content)
+            ?? throw new InvalidOperationException($"Products API returned an empty or invalid response for product {id}.");
+    }
 }
