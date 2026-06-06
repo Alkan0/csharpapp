@@ -1,0 +1,15 @@
+.git
+.vs
+.vscode
+**/bin
+**/obj
+**/logs
+**/*.user
+**/*.suo
+**/*.rsuser
+**/*.log
+Dockerfile
+docker-compose*.yml
+README.md
+postman.json
+insomnia.json
