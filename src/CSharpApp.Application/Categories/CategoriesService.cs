@@ -57,4 +57,18 @@ public class CategoriesService : ICategoriesService
         return createdCategory
             ?? throw new InvalidOperationException("Categories API returned an empty or invalid response after category creation.");
     }
+    public async Task<Category?> UpdateCategory(int id, UpdateCategoryRequest request)
+    {
+        var response = await _httpClient.PutAsJsonAsync($"{_restApiSettings.Categories}/{id}", request);
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Categories API rejected category update request for {CategoryId}: {Error}", id, error);
+            return null;
+        }
+        response.EnsureSuccessStatusCode();
+        var updatedCategory = await response.Content.ReadFromJsonAsync<Category>();
+        return updatedCategory
+            ?? throw new InvalidOperationException($"Categories API returned an empty or invalid response after updating category {id}.");
+    }
 }

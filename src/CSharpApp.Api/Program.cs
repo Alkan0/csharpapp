@@ -103,4 +103,17 @@ versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/categories", as
 .WithName("CreateCategory")
 .HasApiVersion(1.0);
 
+versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/categories/{id:int}", async (int id, UpdateCategoryRequest request, ICategoriesService categoriesService) =>
+{
+    var category = await categoriesService.UpdateCategory(id, request);
+    return category is null
+        ? Results.Problem(
+            statusCode: StatusCodes.Status404NotFound,
+            title: "Category update failed",
+            detail: $"Category with id {id} was not found or could not be updated.")
+        : Results.Ok(category);
+})
+.WithName("UpdateCategory")
+.HasApiVersion(1.0);
+
 app.Run();
