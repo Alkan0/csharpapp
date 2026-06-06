@@ -1,0 +1,8 @@
+global using CSharpApp.Application.Products;
+global using CSharpApp.Core.Dtos;
+global using CSharpApp.Core.Settings;
+global using Microsoft.Extensions.Logging.Abstractions;
+global using Microsoft.Extensions.Options;
+global using System.Net;
+global using System.Net.Http.Headers;
+global using System.Text;
