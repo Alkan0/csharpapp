@@ -153,3 +153,5 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/auth/profile", a
 .HasApiVersion(1.0);
 
 app.Run();
+
+public partial class Program;
