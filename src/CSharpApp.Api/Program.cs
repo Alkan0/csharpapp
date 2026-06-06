@@ -129,4 +129,26 @@ versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/auth/login", as
 .WithName("Login")
 .HasApiVersion(1.0);
 
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/auth/profile", async (HttpRequest request, IAuthService authService) =>
+{
+    var authorization = request.Headers.Authorization.ToString();
+    if (string.IsNullOrWhiteSpace(authorization) || !authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+    {
+        return Results.Problem(
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Authentication required",
+            detail: "A bearer token is required to access the auth profile endpoint.");
+    }
+    var accessToken = authorization["Bearer ".Length..].Trim();
+    var profile = await authService.GetProfile(accessToken);
+    return profile is null
+        ? Results.Problem(
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Authentication failed",
+            detail: "The third-party authentication service rejected the provided access token.")
+        : Results.Ok(profile);
+})
+.WithName("GetAuthProfile")
+.HasApiVersion(1.0);
+
 app.Run();
