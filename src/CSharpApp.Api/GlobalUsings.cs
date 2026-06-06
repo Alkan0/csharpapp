@@ -5,3 +5,5 @@ global using CSharpApp.Infrastructure.Configuration;
 global using Serilog;
 global using CSharpApp.Core.Dtos;
 global using System.Net;
+global using System.Diagnostics;
+global using CSharpApp.Api.Middleware;
