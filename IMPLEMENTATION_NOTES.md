@@ -22,8 +22,30 @@ The previous HTTP client usage was refactored to use typed `HttpClient` registra
 The configuration includes:
 
 - a shared third-party API base URL
-- timeout configuration
+- handler lifetime configuration
 - typed clients for products, categories, and auth services
+
+The `IHttpClientFactory` setup is configured in `CSharpApp.Infrastructure/Configuration/HttpConfiguration.cs` through `services.AddHttpClient(...)`.
+
+The API startup calls this configuration from `CSharpApp.Api/Program.cs`:
+
+```csharp
+builder.Services.AddHttpConfiguration(builder.Configuration);
+```
+
+Each application service is registered as a typed HTTP client:
+
+```csharp
+services.AddHttpClient<IProductsService, ProductsService>(...)
+services.AddHttpClient<ICategoriesService, CategoriesService>(...)
+services.AddHttpClient<IAuthService, AuthService>(...)
+```
+
+This means the .NET `IHttpClientFactory` creates and manages the `HttpClient` instances that are injected into the application services.
+
+The third-party API base URL comes from `RestApiSettings.BaseUrl`, and the HTTP handler lifetime comes from `HttpClientSettings.LifeTime`.
+
+A generic retry policy was intentionally not added. Retries should be applied carefully based on request semantics, because retrying non-idempotent operations such as `POST /products` or `POST /categories` could create duplicate resources.
 
 ### Products API
 
