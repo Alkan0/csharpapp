@@ -20,28 +20,41 @@ public class CategoriesService : ICategoriesService
     {
         var response = await _httpClient.GetAsync(_restApiSettings.Categories);
         response.EnsureSuccessStatusCode();
-
         var content = await response.Content.ReadAsStringAsync();
         var categories = JsonSerializer.Deserialize<List<Category>>(content)
             ?? throw new InvalidOperationException("Categories API returned an empty or invalid response.");
-
         return categories.AsReadOnly();
     }
 
     public async Task<Category?> GetCategory(int id)
     {
         var response = await _httpClient.GetAsync($"{_restApiSettings.Categories}/{id}");
-
         if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
         {
             _logger.LogInformation("Category {CategoryId} was not found", id);
             return null;
         }
-
         response.EnsureSuccessStatusCode();
-
         var content = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<Category>(content)
             ?? throw new InvalidOperationException($"Categories API returned an empty or invalid response for category {id}.");
+    }
+
+    public async Task<Category?> CreateCategory(CreateCategoryRequest request)
+    {
+        var response = await _httpClient.PostAsJsonAsync(_restApiSettings.Categories, request);
+        if (response.StatusCode == HttpStatusCode.BadRequest)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Categories API rejected category creation request: {Error}", error);
+            throw new HttpRequestException(
+                $"Categories API rejected the create category request: {error}",
+                null,
+                response.StatusCode);
+        }
+        response.EnsureSuccessStatusCode();
+        var createdCategory = await response.Content.ReadFromJsonAsync<Category>();
+        return createdCategory
+            ?? throw new InvalidOperationException("Categories API returned an empty or invalid response after category creation.");
     }
 }

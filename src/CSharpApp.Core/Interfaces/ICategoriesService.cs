@@ -4,4 +4,5 @@ public interface ICategoriesService
 {
     Task<IReadOnlyCollection<Category>> GetCategories();
     Task<Category?> GetCategory(int id);
+    Task<Category?> CreateCategory(CreateCategoryRequest request);
 }

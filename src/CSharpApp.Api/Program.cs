@@ -85,4 +85,22 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories/{id:i
 .WithName("GetCategory")
 .HasApiVersion(1.0);
 
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/categories", async (CreateCategoryRequest request, ICategoriesService categoriesService) =>
+{
+    try
+    {
+        var category = await categoriesService.CreateCategory(request);
+        return Results.Created($"api/v1/categories/{category?.Id}", category);
+    }
+    catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+    {
+        return Results.Problem(
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Category creation failed",
+            detail: ex.Message);
+    }
+})
+.WithName("CreateCategory")
+.HasApiVersion(1.0);
+
 app.Run();
