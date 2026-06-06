@@ -63,4 +63,26 @@ versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", asyn
 .WithName("CreateProduct")
 .HasApiVersion(1.0);
 
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories", async (ICategoriesService categoriesService) =>
+{
+    var categories = await categoriesService.GetCategories();
+    return Results.Ok(categories);
+})
+.WithName("GetCategories")
+.HasApiVersion(1.0);
+
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories/{id:int}", async (int id, ICategoriesService categoriesService) =>
+{
+    var category = await categoriesService.GetCategory(id);
+
+    return category is null
+        ? Results.Problem(
+            statusCode: StatusCodes.Status404NotFound,
+            title: "Category not found",
+            detail: $"Category with id {id} was not found.")
+        : Results.Ok(category);
+})
+.WithName("GetCategory")
+.HasApiVersion(1.0);
+
 app.Run();
