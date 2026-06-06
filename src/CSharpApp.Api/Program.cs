@@ -116,4 +116,17 @@ versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/categories/{id:i
 .WithName("UpdateCategory")
 .HasApiVersion(1.0);
 
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/auth/login", async (LoginRequest request, IAuthService authService) =>
+{
+    var token = await authService.Login(request);
+    return token is null
+        ? Results.Problem(
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Authentication failed",
+            detail: "The third-party authentication service rejected the provided credentials.")
+        : Results.Ok(token);
+})
+.WithName("Login")
+.HasApiVersion(1.0);
+
 app.Run();

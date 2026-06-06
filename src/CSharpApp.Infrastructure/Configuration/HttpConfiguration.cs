@@ -17,6 +17,10 @@ public static class HttpConfiguration
         {
             client.BaseAddress = new Uri(restApiSettings!.BaseUrl!);
         });
+        services.AddHttpClient<IAuthService, AuthService>(client =>
+        {
+            client.BaseAddress = new Uri(restApiSettings!.BaseUrl!);
+        });
         return services;
     }
 }
