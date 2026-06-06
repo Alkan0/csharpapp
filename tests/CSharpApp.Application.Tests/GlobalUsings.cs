@@ -1,3 +1,4 @@
+global using CSharpApp.Application.Categories;
 global using CSharpApp.Application.Products;
 global using CSharpApp.Core.Dtos;
 global using CSharpApp.Core.Settings;
