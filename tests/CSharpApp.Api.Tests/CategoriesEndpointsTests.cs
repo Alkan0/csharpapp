@@ -84,4 +84,31 @@ public sealed class CategoriesEndpointsTests(ApiTestApplicationFactory factory) 
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task DeleteCategory_ReturnsNoContent()
+    {
+        var response = await _client.DeleteAsync("/api/v1/categories/1");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_WhenCategoryDoesNotExist_ReturnsNotFound()
+    {
+        var response = await _client.DeleteAsync("/api/v1/categories/999");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetCategoryProducts_ReturnsOk()
+    {
+        var response = await _client.GetAsync("/api/v1/categories/1/products");
+
+        response.EnsureSuccessStatusCode();
+        var products = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<Product>>();
+        var product = Assert.Single(products!);
+        Assert.Equal("Category product", product.Title);
+    }
 }

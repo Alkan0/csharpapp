@@ -133,6 +133,27 @@ versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/categories/{id:i
 .AddEndpointFilter<ValidationFilter<UpdateCategoryRequest>>()
 .HasApiVersion(1.0);
 
+versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/categories/{id:int}", async (int id, ICategoriesService categoriesService) =>
+{
+    var deleted = await categoriesService.DeleteCategory(id);
+    return deleted
+        ? Results.NoContent()
+        : Results.Problem(
+            statusCode: StatusCodes.Status404NotFound,
+            title: "Category deletion failed",
+            detail: $"Category with id {id} was not found or could not be deleted.");
+})
+.WithName("DeleteCategory")
+.HasApiVersion(1.0);
+
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories/{id:int}/products", async (int id, ICategoriesService categoriesService) =>
+{
+    var products = await categoriesService.GetCategoryProducts(id);
+    return Results.Ok(products);
+})
+.WithName("GetCategoryProducts")
+.HasApiVersion(1.0);
+
 versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/auth/login", async (LoginRequest request, IAuthService authService) =>
 {
     var token = await authService.Login(request);

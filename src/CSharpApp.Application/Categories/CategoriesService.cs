@@ -71,4 +71,27 @@ public class CategoriesService : ICategoriesService
         return updatedCategory
             ?? throw new InvalidOperationException($"Categories API returned an empty or invalid response after updating category {id}.");
     }
+
+    public async Task<bool> DeleteCategory(int id)
+    {
+        var response = await _httpClient.DeleteAsync($"{_restApiSettings.Categories}/{id}");
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
+        {
+            _logger.LogInformation("Category {CategoryId} was not found or could not be deleted", id);
+            return false;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<bool>();
+    }
+
+    public async Task<IReadOnlyCollection<Product>> GetCategoryProducts(int id)
+    {
+        var response = await _httpClient.GetAsync($"{_restApiSettings.Categories}/{id}/{_restApiSettings.Products}");
+        response.EnsureSuccessStatusCode();
+        var products = await response.Content.ReadFromJsonAsync<List<Product>>()
+            ?? throw new InvalidOperationException($"Categories API returned an empty or invalid products response for category {id}.");
+
+        return products.AsReadOnly();
+    }
 }

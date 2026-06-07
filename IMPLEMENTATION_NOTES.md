@@ -69,6 +69,8 @@ Implemented endpoints:
 - `GET /api/v1/categories/{id}`
 - `POST /api/v1/categories`
 - `PUT /api/v1/categories/{id}`
+- `DELETE /api/v1/categories/{id}`
+- `GET /api/v1/categories/{id}/products`
 
 Delete was not added because it was not part of the README requirements or the provided API collection flow.
 
