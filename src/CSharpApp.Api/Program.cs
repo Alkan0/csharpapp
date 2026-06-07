@@ -37,9 +37,9 @@ app.MapHealthChecks("/health");
 
 var versionedEndpointRouteBuilder = app.NewVersionedApi();
 
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async (IProductsService productsService) =>
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async (ISender sender) =>
 {
-    var products = await productsService.GetProducts();
+    var products = await sender.Send(new GetProductsQuery());
     return Results.Ok(products);
 })
 .WithName("GetProducts")
