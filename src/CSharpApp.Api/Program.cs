@@ -99,11 +99,11 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories/{id:i
 .WithName("GetCategory")
 .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/categories", async (CreateCategoryRequest request, ICategoriesService categoriesService) =>
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/categories", async (CreateCategoryRequest request, ISender sender) =>
 {
     try
     {
-        var category = await categoriesService.CreateCategory(request);
+        var category = await sender.Send(new CreateCategoryCommand(request));
         return Results.Created($"api/v1/categories/{category?.Id}", category);
     }
     catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
