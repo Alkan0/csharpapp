@@ -10,10 +10,11 @@ public class ProductsServiceTests
               {
                 "id": 1,
                 "title": "Product 1",
+                "slug": "product-1",
                 "price": 10,
                 "description": "Description",
                 "images": [],
-                "category": { "id": 2, "name": "Category", "image": "https://example.com/image.jpg" }
+                "category": { "id": 2, "name": "Category", "slug": "category", "image": "https://example.com/image.jpg" }
               }
             ]
             """));
@@ -23,6 +24,8 @@ public class ProductsServiceTests
         var product = Assert.Single(products);
         Assert.Equal(1, product.Id);
         Assert.Equal("Product 1", product.Title);
+        Assert.Equal("product-1", product.Slug);
+        Assert.Equal("category", product.Category?.Slug);
     }
 
     [Fact]
