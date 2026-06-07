@@ -143,7 +143,7 @@ versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/auth/login", as
 .WithName("Login")
 .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/auth/profile", async (HttpRequest request, IAuthService authService) =>
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/auth/profile", async (HttpRequest request, ISender sender) =>
 {
     var authorization = request.Headers.Authorization.ToString();
     if (string.IsNullOrWhiteSpace(authorization) || !authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
@@ -154,7 +154,7 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/auth/profile", a
             detail: "A bearer token is required to access the auth profile endpoint.");
     }
     var accessToken = authorization["Bearer ".Length..].Trim();
-    var profile = await authService.GetProfile(accessToken);
+    var profile = await sender.Send(new GetAuthProfileQuery(accessToken));
     return profile is null
         ? Results.Problem(
             statusCode: StatusCodes.Status401Unauthorized,

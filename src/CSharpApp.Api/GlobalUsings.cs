@@ -9,6 +9,7 @@ global using System.Diagnostics;
 global using CSharpApp.Api.Middleware;
 global using Asp.Versioning;
 global using CSharpApp.Application.Auth.Commands;
+global using CSharpApp.Application.Auth.Queries;
 global using CSharpApp.Application.Categories.Commands;
 global using CSharpApp.Application.Categories.Queries;
 global using CSharpApp.Application.Products.Commands;
