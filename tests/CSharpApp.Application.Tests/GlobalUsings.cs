@@ -1,7 +1,10 @@
 global using CSharpApp.Application.Categories;
 global using CSharpApp.Application.Auth;
 global using CSharpApp.Application.Products;
+global using CSharpApp.Application.Products.Commands;
+global using CSharpApp.Application.Products.Queries;
 global using CSharpApp.Core.Dtos;
+global using CSharpApp.Core.Interfaces;
 global using CSharpApp.Core.Settings;
 global using Microsoft.Extensions.Logging.Abstractions;
 global using Microsoft.Extensions.Options;
