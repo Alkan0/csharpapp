@@ -3,5 +3,6 @@
 public interface IAuthService
 {
     Task<AuthTokenResponse?> Login(LoginRequest request);
+    Task<AuthTokenResponse?> RefreshToken(RefreshTokenRequest request);
     Task<AuthProfileResponse?> GetProfile(string accessToken);
 }

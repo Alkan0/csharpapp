@@ -67,6 +67,7 @@ Queries are used for read operations:
 - `GetProductQuery`
 - `GetCategoriesQuery`
 - `GetCategoryQuery`
+- `GetCategoryProductsQuery`
 - `GetAuthProfileQuery`
 
 Commands are used for write or action-based operations:
@@ -74,7 +75,9 @@ Commands are used for write or action-based operations:
 - `CreateProductCommand`
 - `CreateCategoryCommand`
 - `UpdateCategoryCommand`
+- `DeleteCategoryCommand`
 - `LoginCommand`
+- `RefreshTokenCommand`
 
 The existing application services remain responsible for communicating with the third-party API. The CQRS handlers represent application use cases and delegate the external API work to those services.
 
@@ -102,8 +105,20 @@ Implemented endpoints:
 - `GET /api/v1/categories/{id}`
 - `POST /api/v1/categories`
 - `PUT /api/v1/categories/{id}`
+- `DELETE /api/v1/categories/{id}`
+- `GET /api/v1/categories/{id}/products`
 
-Delete was not added because it was not part of the README requirements or the provided API collection flow.
+The category endpoints cover the full category flow from the provided API collection.
+
+### Endpoint Organization
+
+The project keeps Minimal APIs, but endpoint mappings are grouped by feature in dedicated extension classes:
+
+- `ProductEndpoints`
+- `CategoryEndpoints`
+- `AuthEndpoints`
+
+This keeps `Program.cs` focused on application setup, middleware, and dependency registration while preserving the existing Minimal API style.
 
 ### Third-Party Auth
 
@@ -112,9 +127,12 @@ JWT-based third-party authentication support was added.
 Implemented endpoints:
 
 - `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh-token`
 - `GET /api/v1/auth/profile`
 
-The login endpoint forwards user credentials to the third-party auth API. The profile endpoint requires a bearer token in the `Authorization` header and forwards that token to the third-party profile endpoint.
+The login endpoint forwards user credentials to the third-party auth API and returns both access and refresh tokens. The refresh-token endpoint forwards a caller-provided refresh token to the third-party API and returns the renewed token response. The profile endpoint requires a bearer token in the `Authorization` header and forwards that token to the third-party profile endpoint.
+
+Server-side token caching was not added intentionally. The product and category endpoints used by this application do not require third-party authorization, and the auth endpoints follow the third-party API contract by accepting caller-provided credentials, access tokens, and refresh tokens instead of storing or reusing a configured service token internally.
 
 ### Request Performance Logging
 
@@ -163,6 +181,7 @@ Current test coverage includes:
 - products service tests
 - categories service tests
 - auth service tests
+- CQRS command and query handler tests
 - products endpoint tests
 - categories endpoint tests
 - auth endpoint tests

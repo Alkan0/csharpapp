@@ -102,6 +102,26 @@ public sealed class ApiTestApplicationFactory : WebApplicationFactory<Program>
             return Task.FromResult(id == 1 ? CreateCategory(1, request.Name ?? "Updated category") : null);
         }
 
+        public Task<bool> DeleteCategory(int id)
+        {
+            return Task.FromResult(id == 1);
+        }
+
+        public Task<IReadOnlyCollection<Product>> GetCategoryProducts(int id)
+        {
+            IReadOnlyCollection<Product> products =
+            [
+                new Product
+                {
+                    Id = 1,
+                    Title = "Category product",
+                    Category = CreateCategory(id, "Test category")
+                }
+            ];
+
+            return Task.FromResult(products);
+        }
+
         private static Category CreateCategory(int id, string name)
         {
             return new Category
@@ -123,6 +143,20 @@ public sealed class ApiTestApplicationFactory : WebApplicationFactory<Program>
                 {
                     AccessToken = "test-access-token",
                     RefreshToken = "test-refresh-token"
+                });
+            }
+
+            return Task.FromResult<AuthTokenResponse?>(null);
+        }
+
+        public Task<AuthTokenResponse?> RefreshToken(RefreshTokenRequest request)
+        {
+            if (request.RefreshToken == "test-refresh-token")
+            {
+                return Task.FromResult<AuthTokenResponse?>(new AuthTokenResponse
+                {
+                    AccessToken = "refreshed-access-token",
+                    RefreshToken = "refreshed-refresh-token"
                 });
             }
 

@@ -33,9 +33,27 @@ public sealed class AuthHandlersTests
         Assert.Equal("access-token", service.LastAccessToken);
     }
 
+    [Fact]
+    public async Task RefreshTokenCommandHandler_ReturnsTokenFromService()
+    {
+        var service = new FakeAuthService();
+        var handler = new RefreshTokenCommandHandler(service);
+        var request = new RefreshTokenRequest
+        {
+            RefreshToken = "refresh-token"
+        };
+
+        var token = await handler.Handle(new RefreshTokenCommand(request), CancellationToken.None);
+
+        Assert.NotNull(token);
+        Assert.Equal("refreshed-access-token", token.AccessToken);
+        Assert.Same(request, service.LastRefreshTokenRequest);
+    }
+
     private sealed class FakeAuthService : IAuthService
     {
         public LoginRequest? LastLoginRequest { get; private set; }
+        public RefreshTokenRequest? LastRefreshTokenRequest { get; private set; }
         public string? LastAccessToken { get; private set; }
 
         public Task<AuthTokenResponse?> Login(LoginRequest request)
@@ -46,6 +64,17 @@ public sealed class AuthHandlersTests
             {
                 AccessToken = "access-token",
                 RefreshToken = "refresh-token"
+            });
+        }
+
+        public Task<AuthTokenResponse?> RefreshToken(RefreshTokenRequest request)
+        {
+            LastRefreshTokenRequest = request;
+
+            return Task.FromResult<AuthTokenResponse?>(new AuthTokenResponse
+            {
+                AccessToken = "refreshed-access-token",
+                RefreshToken = "refreshed-refresh-token"
             });
         }
 

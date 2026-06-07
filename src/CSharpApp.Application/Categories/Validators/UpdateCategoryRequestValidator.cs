@@ -4,10 +4,10 @@ public sealed class UpdateCategoryRequestValidator : AbstractValidator<UpdateCat
 {
     public UpdateCategoryRequestValidator()
     {
-        RuleFor(request => request.Name)
-            .NotEmpty();
-
-        RuleFor(request => request.Image)
-            .NotEmpty();
+        RuleFor(request => request)
+            .Must(request =>
+                !string.IsNullOrWhiteSpace(request.Name) ||
+                !string.IsNullOrWhiteSpace(request.Image))
+            .WithMessage("At least one category field must be provided.");
     }
 }
