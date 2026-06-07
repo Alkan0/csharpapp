@@ -1,4 +1,6 @@
 global using CSharpApp.Application.Categories;
+global using CSharpApp.Application.Categories.Commands;
+global using CSharpApp.Application.Categories.Queries;
 global using CSharpApp.Application.Auth;
 global using CSharpApp.Application.Products;
 global using CSharpApp.Application.Products.Commands;
