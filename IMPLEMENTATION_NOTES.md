@@ -96,6 +96,19 @@ The middleware logs:
 
 Serilog was configured for structured console logging and rolling daily file logs.
 
+### API Documentation
+
+OpenAPI/Swagger support was added for local development.
+
+When the API runs in the `Development` environment, the OpenAPI document and Swagger UI are available at:
+
+```text
+/swagger/v1/swagger.json
+/swagger
+```
+
+Swagger UI is intended as a development and review aid for exploring the implemented endpoints.
+
 ### Tests
 
 Unit tests were added for the application services using fake HTTP handlers, covering successful responses and important failure paths.
