@@ -59,11 +59,11 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int
 .WithName("GetProduct")
 .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", async (CreateProductRequest request, IProductsService productsService) =>
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", async (CreateProductRequest request, ISender sender) =>
 {
     try
     {
-        var product = await productsService.CreateProduct(request);
+        var product = await sender.Send(new CreateProductCommand(request));
         return Results.Created($"api/v1/products/{product?.Id}", product);
     }
     catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
