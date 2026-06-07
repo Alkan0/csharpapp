@@ -32,6 +32,20 @@ public class AuthService : IAuthService
             ?? throw new InvalidOperationException("Auth API returned an empty or invalid response.");
     }
 
+    public async Task<AuthTokenResponse?> RefreshToken(RefreshTokenRequest request)
+    {
+        var response = await _httpClient.PostAsJsonAsync(_restApiSettings.AuthRefreshToken, request);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            _logger.LogWarning("Third-party auth rejected refresh token request.");
+            return null;
+        }
+        response.EnsureSuccessStatusCode();
+        var authToken = await response.Content.ReadFromJsonAsync<AuthTokenResponse>();
+        return authToken
+            ?? throw new InvalidOperationException("Auth API returned an empty or invalid refresh token response.");
+    }
+
     public async Task<AuthProfileResponse?> GetProfile(string accessToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, _restApiSettings.AuthProfile);

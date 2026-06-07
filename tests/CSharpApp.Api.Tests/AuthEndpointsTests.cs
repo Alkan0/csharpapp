@@ -54,6 +54,48 @@ public sealed class AuthEndpointsTests(ApiTestApplicationFactory factory) : ICla
     }
 
     [Fact]
+    public async Task RefreshToken_WithValidRefreshToken_ReturnsToken()
+    {
+        var request = new RefreshTokenRequest
+        {
+            RefreshToken = "test-refresh-token"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/refresh-token", request);
+
+        response.EnsureSuccessStatusCode();
+        var token = await response.Content.ReadFromJsonAsync<AuthTokenResponse>();
+        Assert.Equal("refreshed-access-token", token?.AccessToken);
+        Assert.Equal("refreshed-refresh-token", token?.RefreshToken);
+    }
+
+    [Fact]
+    public async Task RefreshToken_WithInvalidRefreshToken_ReturnsUnauthorized()
+    {
+        var request = new RefreshTokenRequest
+        {
+            RefreshToken = "invalid-refresh-token"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/refresh-token", request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RefreshToken_WithInvalidRequest_ReturnsBadRequest()
+    {
+        var request = new RefreshTokenRequest
+        {
+            RefreshToken = ""
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/refresh-token", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetProfile_WithoutBearerToken_ReturnsUnauthorized()
     {
         var response = await _client.GetAsync("/api/v1/auth/profile");

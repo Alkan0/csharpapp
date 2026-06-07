@@ -149,6 +149,20 @@ public sealed class ApiTestApplicationFactory : WebApplicationFactory<Program>
             return Task.FromResult<AuthTokenResponse?>(null);
         }
 
+        public Task<AuthTokenResponse?> RefreshToken(RefreshTokenRequest request)
+        {
+            if (request.RefreshToken == "test-refresh-token")
+            {
+                return Task.FromResult<AuthTokenResponse?>(new AuthTokenResponse
+                {
+                    AccessToken = "refreshed-access-token",
+                    RefreshToken = "refreshed-refresh-token"
+                });
+            }
+
+            return Task.FromResult<AuthTokenResponse?>(null);
+        }
+
         public Task<AuthProfileResponse?> GetProfile(string accessToken)
         {
             if (accessToken != "test-access-token")

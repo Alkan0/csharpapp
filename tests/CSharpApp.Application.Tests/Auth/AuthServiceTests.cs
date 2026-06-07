@@ -38,6 +38,46 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task RefreshToken_ReturnsToken_WhenApiReturnsValidResponse()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        var service = CreateService(request =>
+        {
+            capturedRequest = request;
+
+            return TestHttpMessageHandler.Json(HttpStatusCode.OK, """
+                {
+                  "access_token": "new-access-token",
+                  "refresh_token": "new-refresh-token"
+                }
+                """);
+        });
+
+        var token = await service.RefreshToken(new RefreshTokenRequest
+        {
+            RefreshToken = "refresh-token"
+        });
+
+        Assert.NotNull(token);
+        Assert.Equal("new-access-token", token.AccessToken);
+        Assert.Equal("new-refresh-token", token.RefreshToken);
+        Assert.Equal("/api/v1/auth/refresh-token", capturedRequest?.RequestUri?.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task RefreshToken_ReturnsNull_WhenApiReturnsUnauthorized()
+    {
+        var service = CreateService(_ => TestHttpMessageHandler.Json(HttpStatusCode.Unauthorized, "{}"));
+
+        var token = await service.RefreshToken(new RefreshTokenRequest
+        {
+            RefreshToken = "invalid-refresh-token"
+        });
+
+        Assert.Null(token);
+    }
+
+    [Fact]
     public async Task GetProfile_SendsBearerToken()
     {
         HttpRequestMessage? capturedRequest = null;
@@ -84,6 +124,7 @@ public class AuthServiceTests
         var settings = Options.Create(new RestApiSettings
         {
             Auth = "auth/login",
+            AuthRefreshToken = "auth/refresh-token",
             AuthProfile = "auth/profile"
         });
 

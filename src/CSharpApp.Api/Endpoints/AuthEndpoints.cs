@@ -21,6 +21,21 @@ public static class AuthEndpoints
         .HasApiVersion(1.0)
         .WithTags("Auth");
 
+        versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/auth/refresh-token", async (RefreshTokenRequest request, IAuthService authService) =>
+        {
+            var token = await authService.RefreshToken(request);
+            return token is null
+                ? Results.Problem(
+                    statusCode: StatusCodes.Status401Unauthorized,
+                    title: "Token refresh failed",
+                    detail: "The third-party authentication service rejected the provided refresh token.")
+                : Results.Ok(token);
+        })
+        .WithName("RefreshToken")
+        .AddEndpointFilter<ValidationFilter<RefreshTokenRequest>>()
+        .HasApiVersion(1.0)
+        .WithTags("Auth");
+
         versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/auth/profile", async (HttpRequest request, IAuthService authService) =>
         {
             var authorization = request.Headers.Authorization.ToString();

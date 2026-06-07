@@ -91,9 +91,12 @@ JWT-based third-party authentication support was added.
 Implemented endpoints:
 
 - `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh-token`
 - `GET /api/v1/auth/profile`
 
-The login endpoint forwards user credentials to the third-party auth API. The profile endpoint requires a bearer token in the `Authorization` header and forwards that token to the third-party profile endpoint.
+The login endpoint forwards user credentials to the third-party auth API and returns both access and refresh tokens. The refresh-token endpoint forwards a caller-provided refresh token to the third-party API and returns the renewed token response. The profile endpoint requires a bearer token in the `Authorization` header and forwards that token to the third-party profile endpoint.
+
+Server-side token caching was not added intentionally. The product and category endpoints used by this application do not require third-party authorization, and the auth endpoints follow the third-party API contract by accepting caller-provided credentials, access tokens, and refresh tokens instead of storing or reusing a configured service token internally.
 
 ### Request Performance Logging
 
