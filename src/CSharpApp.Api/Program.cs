@@ -45,9 +45,9 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async
 .WithName("GetProducts")
 .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int}", async (int id, IProductsService productsService) =>
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int}", async (int id, ISender sender) =>
 {
-    var product = await productsService.GetProduct(id);
+    var product = await sender.Send(new GetProductQuery(id));
 
     return product is null
         ? Results.Problem(
