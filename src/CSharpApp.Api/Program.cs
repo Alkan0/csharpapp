@@ -130,9 +130,9 @@ versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/categories/{id:i
 .WithName("UpdateCategory")
 .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/auth/login", async (LoginRequest request, IAuthService authService) =>
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/auth/login", async (LoginRequest request, ISender sender) =>
 {
-    var token = await authService.Login(request);
+    var token = await sender.Send(new LoginCommand(request));
     return token is null
         ? Results.Problem(
             statusCode: StatusCodes.Status401Unauthorized,
