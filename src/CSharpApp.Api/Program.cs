@@ -85,9 +85,9 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories", asy
 .WithName("GetCategories")
 .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories/{id:int}", async (int id, ICategoriesService categoriesService) =>
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories/{id:int}", async (int id, ISender sender) =>
 {
-    var category = await categoriesService.GetCategory(id);
+    var category = await sender.Send(new GetCategoryQuery(id));
 
     return category is null
         ? Results.Problem(
