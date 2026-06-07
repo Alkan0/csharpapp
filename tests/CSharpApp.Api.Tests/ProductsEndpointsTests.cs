@@ -46,4 +46,21 @@ public sealed class ProductsEndpointsTests(ApiTestApplicationFactory factory) : 
         var product = await response.Content.ReadFromJsonAsync<Product>();
         Assert.Equal("Created product", product?.Title);
     }
+
+    [Fact]
+    public async Task CreateProduct_WithInvalidRequest_ReturnsBadRequest()
+    {
+        var request = new CreateProductRequest
+        {
+            Title = "",
+            Price = 0,
+            Description = "",
+            CategoryId = 0,
+            Images = []
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/v1/products", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

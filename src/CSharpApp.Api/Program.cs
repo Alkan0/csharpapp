@@ -75,6 +75,7 @@ versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", asyn
     }
 })
 .WithName("CreateProduct")
+.AddEndpointFilter<ValidationFilter<CreateProductRequest>>()
 .HasApiVersion(1.0);
 
 versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories", async (ICategoriesService categoriesService) =>
@@ -115,6 +116,7 @@ versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/categories", as
     }
 })
 .WithName("CreateCategory")
+.AddEndpointFilter<ValidationFilter<CreateCategoryRequest>>()
 .HasApiVersion(1.0);
 
 versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/categories/{id:int}", async (int id, UpdateCategoryRequest request, ICategoriesService categoriesService) =>
@@ -128,6 +130,7 @@ versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/categories/{id:i
         : Results.Ok(category);
 })
 .WithName("UpdateCategory")
+.AddEndpointFilter<ValidationFilter<UpdateCategoryRequest>>()
 .HasApiVersion(1.0);
 
 versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/auth/login", async (LoginRequest request, IAuthService authService) =>
@@ -141,6 +144,7 @@ versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/auth/login", as
         : Results.Ok(token);
 })
 .WithName("Login")
+.AddEndpointFilter<ValidationFilter<LoginRequest>>()
 .HasApiVersion(1.0);
 
 versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/auth/profile", async (HttpRequest request, IAuthService authService) =>
