@@ -11,4 +11,13 @@ public sealed class ApiDocumentationTests(ApiTestApplicationFactory factory) : I
 
         response.EnsureSuccessStatusCode();
     }
+
+    [Fact]
+    public async Task SwaggerDocument_UsesConcreteApiVersionInPaths()
+    {
+        var swaggerDocument = await _client.GetStringAsync("/swagger/v1/swagger.json");
+
+        Assert.Contains("/api/v1/products", swaggerDocument);
+        Assert.DoesNotContain("v{version}", swaggerDocument);
+    }
 }

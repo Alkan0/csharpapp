@@ -109,6 +109,16 @@ When the API runs in the `Development` environment, the OpenAPI document and Swa
 
 Swagger UI is intended as a development and review aid for exploring the implemented endpoints.
 
+### Health Check
+
+A lightweight health check endpoint was added for local verification, Docker/runtime checks, and operational readiness.
+
+```text
+GET /health
+```
+
+The endpoint uses the built-in ASP.NET Core health checks infrastructure and returns `200 OK` when the API host is healthy.
+
 ### Tests
 
 Unit tests were added for the application services using fake HTTP handlers, covering successful responses and important failure paths.

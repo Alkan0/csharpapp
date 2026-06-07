@@ -19,6 +19,7 @@ builder.Services.AddApiVersioning(options =>
     options.GroupNameFormat = "'v'V";
     options.SubstituteApiVersionInUrl = true;
 });
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -32,6 +33,8 @@ if (app.Environment.IsDevelopment())
 //app.UseHttpsRedirection();
 
 app.UseMiddleware<RequestPerformanceMiddleware>();
+app.MapHealthChecks("/health");
+
 var versionedEndpointRouteBuilder = app.NewVersionedApi();
 
 versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async (IProductsService productsService) =>
