@@ -47,6 +47,39 @@ The third-party API base URL comes from `RestApiSettings.BaseUrl`, and the HTTP 
 
 A generic retry policy was intentionally not added. Retries should be applied carefully based on request semantics, because retrying non-idempotent operations such as `POST /products` or `POST /categories` could create duplicate resources.
 
+### CQRS Refactor
+
+The API endpoints were refactored to use a CQRS-style application flow with MediatR.
+
+The endpoint flow is now:
+
+```text
+HTTP endpoint
+  -> command/query sent through ISender
+  -> command/query handler
+  -> application service
+  -> third-party API
+```
+
+Queries are used for read operations:
+
+- `GetProductsQuery`
+- `GetProductQuery`
+- `GetCategoriesQuery`
+- `GetCategoryQuery`
+- `GetAuthProfileQuery`
+
+Commands are used for write or action-based operations:
+
+- `CreateProductCommand`
+- `CreateCategoryCommand`
+- `UpdateCategoryCommand`
+- `LoginCommand`
+
+The existing application services remain responsible for communicating with the third-party API. The CQRS handlers represent application use cases and delegate the external API work to those services.
+
+This keeps the refactor focused: endpoints no longer call services directly, while the existing external API integration layer remains intact and testable.
+
 ### Products API
 
 The products feature was expanded beyond the original `getAll` behavior.
@@ -189,5 +222,5 @@ The Docker build also executes the test suite inside the build container before 
 ## Notes
 
 - The implementation keeps the existing architecture and avoids introducing unnecessary abstractions.
-- CQRS was considered, but it was not included in the main implementation because the current service-based structure remains simple and readable for the project size.
+- CQRS was introduced in the application layer using MediatR while keeping the service layer as the boundary to the third-party API.
 - API endpoints return structured problem responses for expected error cases such as missing resources or rejected authentication.
