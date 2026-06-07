@@ -8,7 +8,17 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDefaultConfiguration(builder.Configuration);
 builder.Services.AddHttpConfiguration(builder.Configuration);
 builder.Services.AddProblemDetails();
-builder.Services.AddApiVersioning();
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1.0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+})
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'V";
+    options.SubstituteApiVersionInUrl = true;
+});
 
 var app = builder.Build();
 
