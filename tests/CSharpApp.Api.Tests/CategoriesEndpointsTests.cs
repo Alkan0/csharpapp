@@ -43,4 +43,32 @@ public sealed class CategoriesEndpointsTests(ApiTestApplicationFactory factory) 
         var category = await response.Content.ReadFromJsonAsync<Category>();
         Assert.Equal("Updated category", category?.Name);
     }
+
+    [Fact]
+    public async Task CreateCategory_WithInvalidRequest_ReturnsBadRequest()
+    {
+        var request = new CreateCategoryRequest
+        {
+            Name = "",
+            Image = ""
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/v1/categories", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_WithInvalidRequest_ReturnsBadRequest()
+    {
+        var request = new UpdateCategoryRequest
+        {
+            Name = "",
+            Image = ""
+        };
+
+        var response = await _client.PutAsJsonAsync("/api/v1/categories/1", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

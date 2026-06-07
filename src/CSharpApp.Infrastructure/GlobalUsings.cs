@@ -7,3 +7,4 @@ global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using CSharpApp.Application.Categories;
 global using CSharpApp.Application.Auth;
+global using FluentValidation;

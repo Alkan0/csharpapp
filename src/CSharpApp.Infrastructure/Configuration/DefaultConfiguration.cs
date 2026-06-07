@@ -6,6 +6,7 @@ public static class DefaultConfiguration
     {
         services.Configure<RestApiSettings>(configuration.GetSection(nameof(RestApiSettings)));
         services.Configure<HttpClientSettings>(configuration.GetSection(nameof(HttpClientSettings)));
+        services.AddValidatorsFromAssembly(typeof(ProductsService).Assembly);
         services.AddMediatR(options =>
         {
             options.RegisterServicesFromAssembly(typeof(ProductsService).Assembly);

@@ -40,6 +40,20 @@ public sealed class AuthEndpointsTests(ApiTestApplicationFactory factory) : ICla
     }
 
     [Fact]
+    public async Task Login_WithInvalidRequest_ReturnsBadRequest()
+    {
+        var request = new LoginRequest
+        {
+            Email = "not-an-email",
+            Password = ""
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/login", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetProfile_WithoutBearerToken_ReturnsUnauthorized()
     {
         var response = await _client.GetAsync("/api/v1/auth/profile");
