@@ -77,9 +77,9 @@ versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", asyn
 .WithName("CreateProduct")
 .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories", async (ICategoriesService categoriesService) =>
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories", async (ISender sender) =>
 {
-    var categories = await categoriesService.GetCategories();
+    var categories = await sender.Send(new GetCategoriesQuery());
     return Results.Ok(categories);
 })
 .WithName("GetCategories")

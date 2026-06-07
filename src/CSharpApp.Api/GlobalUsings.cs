@@ -8,6 +8,7 @@ global using System.Net;
 global using System.Diagnostics;
 global using CSharpApp.Api.Middleware;
 global using Asp.Versioning;
+global using CSharpApp.Application.Categories.Queries;
 global using CSharpApp.Application.Products.Commands;
 global using CSharpApp.Application.Products.Queries;
 global using MediatR;
