@@ -72,7 +72,17 @@ Implemented endpoints:
 - `DELETE /api/v1/categories/{id}`
 - `GET /api/v1/categories/{id}/products`
 
-Delete was not added because it was not part of the README requirements or the provided API collection flow.
+The category endpoints cover the full category flow from the provided API collection.
+
+### Endpoint Organization
+
+The project keeps Minimal APIs, but endpoint mappings are grouped by feature in dedicated extension classes:
+
+- `ProductEndpoints`
+- `CategoryEndpoints`
+- `AuthEndpoints`
+
+This keeps `Program.cs` focused on application setup, middleware, and dependency registration while preserving the existing Minimal API style.
 
 ### Third-Party Auth
 

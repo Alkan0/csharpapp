@@ -9,4 +9,5 @@ global using System.Diagnostics;
 global using CSharpApp.Api.Middleware;
 global using Asp.Versioning;
 global using CSharpApp.Api.Filters;
+global using CSharpApp.Api.Endpoints;
 global using FluentValidation;
