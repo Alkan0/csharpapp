@@ -45,6 +45,19 @@ public sealed class CategoriesEndpointsTests(ApiTestApplicationFactory factory) 
     }
 
     [Fact]
+    public async Task UpdateCategory_WithPartialRequest_ReturnsOk()
+    {
+        var request = new UpdateCategoryRequest
+        {
+            Name = "Updated category"
+        };
+
+        var response = await _client.PutAsJsonAsync("/api/v1/categories/1", request);
+
+        response.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
     public async Task CreateCategory_WithInvalidRequest_ReturnsBadRequest()
     {
         var request = new CreateCategoryRequest
