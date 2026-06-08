@@ -1,0 +1,8 @@
+services:
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development

@@ -14,12 +14,15 @@ RUN dotnet restore src/CSharpApp.sln
 COPY src/ src/
 COPY tests/ tests/
 
-FROM build AS test
-RUN dotnet test src/CSharpApp.sln \
+RUN dotnet test tests/CSharpApp.Application.Tests/CSharpApp.Application.Tests.csproj \
     --configuration Release \
     --no-restore
 
-FROM test AS publish
+FROM build AS test
+ENTRYPOINT ["dotnet", "test"]
+CMD ["tests/CSharpApp.Api.Tests/CSharpApp.Api.Tests.csproj", "--configuration", "Release", "--no-restore"]
+
+FROM build AS publish
 RUN dotnet publish src/CSharpApp.Api/CSharpApp.Api.csproj \
     --configuration Release \
     --no-restore \

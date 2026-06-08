@@ -192,6 +192,17 @@ Run all tests:
 dotnet test src\CSharpApp.sln
 ```
 
+Dockerized test split:
+
+- Unit/application tests, including CQRS command and query handler tests, run during the main Docker image build as a build gate.
+- Integration/API tests run from a dedicated Compose file so they have their own container lifecycle.
+
+Run integration tests with Docker Compose:
+
+```powershell
+docker compose -f docker-compose.test.yml run --rm --build integration-tests
+```
+
 ### Docker Support
 
 Docker support was added with a multi-stage Dockerfile.
@@ -199,8 +210,8 @@ Docker support was added with a multi-stage Dockerfile.
 The Docker build:
 
 1. restores the full solution
-2. runs unit and integration tests
-3. publishes the API only if tests pass
+2. runs the application unit tests
+3. publishes the API only if unit tests pass
 4. creates a clean runtime image containing only the published API output
 
 Build the Docker image:
@@ -221,6 +232,12 @@ Run with Docker Compose:
 docker compose up --build
 ```
 
+Run integration tests with the dedicated test Compose file:
+
+```powershell
+docker compose -f docker-compose.test.yml run --rm --build integration-tests
+```
+
 The API will be available at:
 
 ```text
@@ -234,9 +251,11 @@ The solution was verified with:
 ```powershell
 dotnet test src\CSharpApp.sln
 docker build -t csharpapp-api .
+docker compose build api
+docker compose -f docker-compose.test.yml run --rm --build integration-tests
 ```
 
-The Docker build also executes the test suite inside the build container before publishing the final API image.
+The Docker build executes the application unit test project inside the build container before publishing the final API image. Integration tests are executed separately through `docker-compose.test.yml`.
 
 ## Notes
 
