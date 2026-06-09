@@ -104,6 +104,16 @@ public sealed class AuthEndpointsTests(ApiTestApplicationFactory factory) : ICla
     }
 
     [Fact]
+    public async Task GetProfile_WithInvalidBearerToken_ReturnsUnauthorized()
+    {
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "invalid-token");
+
+        var response = await _client.GetAsync("/api/v1/auth/profile");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetProfile_WithValidBearerToken_ReturnsProfile()
     {
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-access-token");

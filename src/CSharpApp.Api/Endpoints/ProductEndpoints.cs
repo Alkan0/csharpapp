@@ -12,6 +12,7 @@ public static class ProductEndpoints
             return Results.Ok(products);
         })
         .WithName("GetProducts")
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Products");
 
@@ -27,6 +28,7 @@ public static class ProductEndpoints
                 : Results.Ok(product);
         })
         .WithName("GetProduct")
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Products");
 
@@ -47,6 +49,7 @@ public static class ProductEndpoints
         })
         .WithName("CreateProduct")
         .AddEndpointFilter<ValidationFilter<CreateProductRequest>>()
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Products");
 

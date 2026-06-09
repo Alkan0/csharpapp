@@ -12,6 +12,7 @@ public static class CategoryEndpoints
             return Results.Ok(categories);
         })
         .WithName("GetCategories")
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Categories");
 
@@ -27,6 +28,7 @@ public static class CategoryEndpoints
                 : Results.Ok(category);
         })
         .WithName("GetCategory")
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Categories");
 
@@ -47,6 +49,7 @@ public static class CategoryEndpoints
         })
         .WithName("CreateCategory")
         .AddEndpointFilter<ValidationFilter<CreateCategoryRequest>>()
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Categories");
 
@@ -62,6 +65,7 @@ public static class CategoryEndpoints
         })
         .WithName("UpdateCategory")
         .AddEndpointFilter<ValidationFilter<UpdateCategoryRequest>>()
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Categories");
 
@@ -76,6 +80,7 @@ public static class CategoryEndpoints
                     detail: $"Category with id {id} was not found or could not be deleted.");
         })
         .WithName("DeleteCategory")
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Categories");
 
@@ -85,6 +90,7 @@ public static class CategoryEndpoints
             return Results.Ok(products);
         })
         .WithName("GetCategoryProducts")
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Categories");
 

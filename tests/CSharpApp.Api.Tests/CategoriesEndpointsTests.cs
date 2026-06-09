@@ -1,12 +1,23 @@
 using CSharpApp.Core.Dtos;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace CSharpApp.Api.Tests;
 
 public sealed class CategoriesEndpointsTests(ApiTestApplicationFactory factory) : IClassFixture<ApiTestApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = CreateAuthenticatedClient(factory);
+
+    [Fact]
+    public async Task GetCategories_WithoutBearerToken_ReturnsUnauthorized()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/categories");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 
     [Fact]
     public async Task GetCategories_ReturnsOk()
@@ -110,5 +121,12 @@ public sealed class CategoriesEndpointsTests(ApiTestApplicationFactory factory) 
         var products = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<Product>>();
         var product = Assert.Single(products!);
         Assert.Equal("Category product", product.Title);
+    }
+
+    private static HttpClient CreateAuthenticatedClient(ApiTestApplicationFactory factory)
+    {
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-access-token");
+        return client;
     }
 }
