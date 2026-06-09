@@ -21,9 +21,6 @@ public class RequestPerformanceMiddleware
         try
         {
             await _next(context);
-        }
-        finally
-        {
             stopwatch.Stop();
             _logger.LogInformation(
                 "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {ElapsedMilliseconds} ms",
@@ -31,6 +28,19 @@ public class RequestPerformanceMiddleware
                 context.Request.Path,
                 context.Response.StatusCode,
                 stopwatch.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger.LogError(
+                ex,
+                "HTTP {RequestMethod} {RequestPath} failed {StatusCode} in {ElapsedMilliseconds} ms",
+                context.Request.Method,
+                context.Request.Path,
+                StatusCodes.Status500InternalServerError,
+                stopwatch.ElapsedMilliseconds);
+
+            throw;
         }
     }
 }
