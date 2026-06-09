@@ -13,6 +13,7 @@ global using CSharpApp.Api.Filters;
 global using CSharpApp.Api.Endpoints;
 global using FluentValidation;
 global using Microsoft.AspNetCore.Authentication;
+global using Microsoft.AspNetCore.Diagnostics;
 global using Microsoft.Extensions.Options;
 global using Microsoft.OpenApi;
 global using System.Security.Claims;

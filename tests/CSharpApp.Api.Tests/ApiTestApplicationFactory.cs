@@ -38,6 +38,11 @@ public sealed class ApiTestApplicationFactory : WebApplicationFactory<Program>
 
         public Task<Product?> GetProduct(int id)
         {
+            if (id == 503)
+            {
+                throw new HttpRequestException("Third-party products service failed.", null, HttpStatusCode.ServiceUnavailable);
+            }
+
             return Task.FromResult(id == 1 ? CreateProduct(1, "Test product") : null);
         }
 

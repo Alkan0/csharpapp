@@ -1,4 +1,5 @@
 using CSharpApp.Core.Dtos;
+using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -37,6 +38,17 @@ public sealed class ProductsEndpointsTests(ApiTestApplicationFactory factory) : 
         var response = await _client.GetAsync("/api/v1/products/999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProduct_WhenThirdPartyServiceFails_ReturnsServiceUnavailableProblem()
+    {
+        var response = await _client.GetAsync("/api/v1/products/503");
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("Third-party service unavailable", problem?.Title);
+        Assert.Equal("/api/v1/products/503", problem?.Instance);
     }
 
     [Fact]
