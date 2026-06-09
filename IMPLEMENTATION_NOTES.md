@@ -1,53 +1,55 @@
 # Implementation Notes
 
-This document summarizes the main changes made for the Accepted C# assessment and how the solution can be built, tested, and run.
+This document summarizes the implementation work completed for the Accepted C# assessment, the main technical decisions, and the commands used to build, test, and run the solution.
 
 ## Solution Structure
 
-The solution keeps the existing layered structure:
+The solution keeps the existing layered structure and avoids a large architectural rewrite:
 
-- `CSharpApp.Api`: Minimal API endpoints, API versioning, middleware, OpenAPI setup, and request/response handling.
+- `CSharpApp.Api`: Minimal API endpoints, API versioning, authentication/authorization, middleware, Swagger/OpenAPI, and HTTP response handling.
 - `CSharpApp.Application`: Application services that coordinate calls to the third-party API.
-- `CSharpApp.Core`: Shared DTOs, interfaces, and settings models.
-- `CSharpApp.Infrastructure`: Dependency injection and HTTP client configuration.
-- `tests/CSharpApp.Application.Tests`: Unit tests for application services.
-- `tests/CSharpApp.Api.Tests`: Integration tests for the API endpoints.
+- `CSharpApp.Core`: DTOs, interfaces, and settings models shared across the solution.
+- `CSharpApp.Infrastructure`: Dependency injection and outbound HTTP client configuration.
+- `tests/CSharpApp.Application.Tests`: Unit tests for application services and third-party service wrappers.
+- `tests/CSharpApp.Api.Tests`: Integration tests for API endpoints and middleware behavior.
 
-## Main Changes
+The API remains implemented with Minimal APIs. Endpoint mappings are grouped by feature to keep `Program.cs` focused on application startup and pipeline configuration.
 
-### HTTP Client Refactor
+## HTTP Client Configuration
 
-The previous HTTP client usage was refactored to use typed `HttpClient` registrations through dependency injection. This keeps HTTP configuration centralized and avoids inefficient client creation patterns.
+Outbound calls to the third-party API are centralized through typed `HttpClient` registrations using `IHttpClientFactory`.
 
-The configuration includes:
+Registered typed clients:
 
-- a shared third-party API base URL
-- handler lifetime configuration
-- typed clients for products, categories, and auth services
+- `IProductsService` / `ProductsService`
+- `ICategoriesService` / `CategoriesService`
+- `IAuthService` / `AuthService`
 
-The `IHttpClientFactory` setup is configured in `CSharpApp.Infrastructure/Configuration/HttpConfiguration.cs` through `services.AddHttpClient(...)`.
+Configuration is handled in:
 
-The API startup calls this configuration from `CSharpApp.Api/Program.cs`:
-
-```csharp
-builder.Services.AddHttpConfiguration(builder.Configuration);
+```text
+src/CSharpApp.Infrastructure/Configuration/HttpConfiguration.cs
 ```
 
-Each application service is registered as a typed HTTP client:
+The setup uses:
 
-```csharp
-services.AddHttpClient<IProductsService, ProductsService>(...)
-services.AddHttpClient<ICategoriesService, CategoriesService>(...)
-services.AddHttpClient<IAuthService, AuthService>(...)
-```
+- `RestApiSettings.BaseUrl` for the third-party API base address
+- `HttpClientSettings.LifeTime` for handler lifetime
+- `HttpClientSettings.RetryCount` for retry attempts
+- `HttpClientSettings.SleepDuration` for the base retry delay
 
-This means the .NET `IHttpClientFactory` creates and manages the `HttpClient` instances that are injected into the application services.
+Retries are implemented with Polly and are applied only to idempotent HTTP methods. This avoids retrying non-idempotent calls such as `POST /products`, `POST /categories`, `auth/login`, and `auth/refresh-token`, where automatic retries could create duplicate writes or misleading auth behavior.
 
-The third-party API base URL comes from `RestApiSettings.BaseUrl`, and the HTTP handler lifetime comes from `HttpClientSettings.LifeTime`.
+The retry policy handles:
 
-A generic retry policy was intentionally not added. Retries should be applied carefully based on request semantics, because retrying non-idempotent operations such as `POST /products` or `POST /categories` could create duplicate resources.
+- transient HTTP failures
+- `408 Request Timeout`
+- `5xx` responses
+- `429 Too Many Requests`
 
-### Products API
+Retry delays use exponential backoff based on `SleepDuration`. Retry attempts are logged through the same `ILogger`/Serilog pipeline used by the rest of the application.
+
+## Products API
 
 The products feature was expanded beyond the original `getAll` behavior.
 
@@ -57,9 +59,9 @@ Implemented endpoints:
 - `GET /api/v1/products/{id}`
 - `POST /api/v1/products`
 
-The API now returns proper HTTP responses for missing products and invalid third-party responses.
+The API returns structured responses for missing products and validation failures.
 
-### Categories API
+## Categories API
 
 Categories support was added following the same service-oriented structure as products.
 
@@ -72,108 +74,194 @@ Implemented endpoints:
 - `DELETE /api/v1/categories/{id}`
 - `GET /api/v1/categories/{id}/products`
 
-The category endpoints cover the full category flow from the provided API collection.
+These endpoints cover the category flows included in the provided API collections.
 
-### Endpoint Organization
+## Endpoint Organization
 
-The project keeps Minimal APIs, but endpoint mappings are grouped by feature in dedicated extension classes:
+The Minimal API endpoints are grouped into feature-specific extension classes:
 
 - `ProductEndpoints`
 - `CategoryEndpoints`
 - `AuthEndpoints`
 
-This keeps `Program.cs` focused on application setup, middleware, and dependency registration while preserving the existing Minimal API style.
+`Program.cs` wires these groups together:
 
-### Third-Party Auth
+```csharp
+app.MapProductEndpoints()
+   .MapCategoryEndpoints()
+   .MapAuthEndpoints();
+```
 
-JWT-based third-party authentication support was added.
+This keeps the existing Minimal API style while avoiding a large, hard-to-read startup file.
 
-Implemented endpoints:
+## Authentication and Authorization
+
+Third-party JWT support was implemented through the API layer using ASP.NET Core authentication and authorization.
+
+Public auth endpoints:
 
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/refresh-token`
+
+Protected auth endpoint:
+
 - `GET /api/v1/auth/profile`
 
-The login endpoint forwards user credentials to the third-party auth API and returns both access and refresh tokens. The refresh-token endpoint forwards a caller-provided refresh token to the third-party API and returns the renewed token response. The profile endpoint requires a bearer token in the `Authorization` header and forwards that token to the third-party profile endpoint.
+Protected resource endpoints:
 
-Server-side token caching was not added intentionally. The product and category endpoints used by this application do not require third-party authorization, and the auth endpoints follow the third-party API contract by accepting caller-provided credentials, access tokens, and refresh tokens instead of storing or reusing a configured service token internally.
+- products endpoints
+- categories endpoints
 
-### Request Performance Logging
+The solution uses a custom authentication scheme:
 
-A custom middleware was added to measure and log API request performance.
+```text
+ThirdPartyBearer
+```
 
-The middleware logs:
+The custom authentication handler:
 
-- HTTP method
-- request path
-- status code
-- elapsed time in milliseconds
+1. Reads `Authorization: Bearer <access_token>`.
+2. Sends the token to the third-party `/auth/profile` endpoint through `IAuthService.GetProfile(...)`.
+3. Treats a successful profile response as token validation.
+4. Creates a `ClaimsPrincipal` from the returned profile data.
+5. Rejects missing or invalid tokens with `401 Unauthorized`.
 
-Serilog was configured for structured console logging and rolling daily file logs.
+The project does not perform local JWT signature validation because the third-party signing key/JWKS is not available. Using `/auth/profile` as the validation source is the correct approach for this API contract.
 
-### API Documentation
+Minimal APIs are protected with:
 
-OpenAPI/Swagger support was added for local development.
+```csharp
+.RequireAuthorization()
+```
 
-When the API runs in the `Development` environment, the OpenAPI document and Swagger UI are available at:
+This is the Minimal API equivalent of applying `[Authorize]` metadata while preserving the existing endpoint style.
+
+The refresh-token endpoint intentionally remains public. It must be callable when the access token has expired or is no longer accepted.
+
+## Swagger/OpenAPI
+
+Swagger is enabled in the `Development` environment.
+
+Development URLs:
 
 ```text
 /swagger/v1/swagger.json
 /swagger
 ```
 
-Swagger UI is intended as a development and review aid for exploring the implemented endpoints.
+Swagger also includes Bearer authentication support. In Swagger UI:
 
-### Health Check
+1. Call `POST /api/v1/auth/login`.
+2. Copy the returned `access_token`.
+3. Click `Authorize`.
+4. Paste the token without the `Bearer` prefix.
+5. Call protected endpoints.
 
-A lightweight health check endpoint was added for local verification, Docker/runtime checks, and operational readiness.
+## Request Performance Logging
+
+A custom middleware measures and logs request performance.
+
+Logged fields include:
+
+- HTTP method
+- request path
+- response status code
+- elapsed time in milliseconds
+- concrete endpoint name
+- authentication state
+- user id when available
+- request host
+
+Endpoint names replace the route version token with the concrete version, so logs show values such as:
+
+```text
+HTTP: GET /api/v1/products
+```
+
+instead of:
+
+```text
+HTTP: GET /api/v{version:apiVersion}/products
+```
+
+The middleware also logs failed requests as errors and rethrows the exception so the global exception handler can return the correct response.
+
+## Global Exception Handling
+
+Global exception handling was added through:
+
+```text
+src/CSharpApp.Api/Middleware/ExceptionHandlingExtensions.cs
+```
+
+The API now returns consistent `ProblemDetails` responses for unhandled exceptions.
+
+Current mappings:
+
+- `HttpRequestException` -> `503 Service Unavailable`
+- all other unhandled exceptions -> `500 Internal Server Error`
+
+This keeps upstream third-party failures from leaking raw exception details to API clients.
+
+## Health Check
+
+A lightweight health endpoint is available:
 
 ```text
 GET /health
 ```
 
-The endpoint uses the built-in ASP.NET Core health checks infrastructure and returns `200 OK` when the API host is healthy.
+It uses ASP.NET Core health checks and returns `200 OK` when the API host is healthy.
 
-### Tests
+## Tests
 
-Unit tests were added for the application services using fake HTTP handlers, covering successful responses and important failure paths.
+Tests cover application services, endpoint behavior, middleware behavior, Swagger metadata, and important failure paths.
 
-Integration tests were added for API endpoints using `WebApplicationFactory`. These tests replace the real application services with fake implementations so endpoint behavior can be verified without depending on the external third-party API.
+Current API test coverage includes:
 
-Current test coverage includes:
+- products endpoints
+- categories endpoints
+- auth endpoints
+- health checks
+- Swagger/OpenAPI output
+- HTTP configuration validation
+- request performance middleware
+- global exception handling
 
-- products service tests
-- categories service tests
-- auth service tests
-- products endpoint tests
-- categories endpoint tests
-- auth endpoint tests
+Current application test coverage includes:
 
-Run all tests:
+- products service behavior
+- categories service behavior
+- auth service behavior
+
+Run API tests:
+
+```powershell
+dotnet test tests\CSharpApp.Api.Tests\CSharpApp.Api.Tests.csproj
+```
+
+Run application tests:
+
+```powershell
+dotnet test tests\CSharpApp.Application.Tests\CSharpApp.Application.Tests.csproj
+```
+
+Run the full solution tests:
 
 ```powershell
 dotnet test src\CSharpApp.sln
 ```
 
-Dockerized test split:
+If the API is running locally and locks build outputs, stop the running process before executing tests.
 
-- Unit tests run during the main Docker image build as a build gate.
-- Integration/API tests run from a dedicated Compose file so they have their own container lifecycle.
-
-Run integration tests with Docker Compose:
-
-```powershell
-docker compose -f docker-compose.test.yml run --rm --build integration-tests
-```
-
-### Docker Support
+## Docker Support
 
 Docker support was added with a multi-stage Dockerfile.
 
 The Docker build:
 
-1. restores the full solution
-2. runs the application unit tests
+1. restores the solution
+2. runs the application unit tests as a build gate
 3. publishes the API only if unit tests pass
 4. creates a clean runtime image containing only the published API output
 
@@ -195,7 +283,7 @@ Run with Docker Compose:
 docker compose up --build
 ```
 
-Run integration tests with the dedicated test Compose file:
+Run integration/API tests with the dedicated Compose file:
 
 ```powershell
 docker compose -f docker-compose.test.yml run --rm --build integration-tests
@@ -212,16 +300,23 @@ http://localhost:8080
 The solution was verified with:
 
 ```powershell
-dotnet test src\CSharpApp.sln
+dotnet test tests\CSharpApp.Api.Tests\CSharpApp.Api.Tests.csproj
+dotnet test tests\CSharpApp.Application.Tests\CSharpApp.Application.Tests.csproj
+```
+
+Docker verification commands:
+
+```powershell
 docker build -t csharpapp-api .
 docker compose build api
 docker compose -f docker-compose.test.yml run --rm --build integration-tests
 ```
 
-The Docker build executes the unit test project inside the build container before publishing the final API image. Integration tests are executed separately through `docker-compose.test.yml`.
+## Notes and Trade-Offs
 
-## Notes
-
-- The implementation keeps the existing architecture and avoids introducing unnecessary abstractions.
-- CQRS was considered, but it was not included in the main implementation because the current service-based structure remains simple and readable for the project size.
-- API endpoints return structured problem responses for expected error cases such as missing resources or rejected authentication.
+- The existing Minimal API architecture was preserved.
+- `.RequireAuthorization()` is used instead of controller `[Authorize]` attributes because the project is not controller-based.
+- Token validation is performed through the third-party `/auth/profile` endpoint because local JWT signing metadata is not available.
+- Token/profile validation is performed on each protected request. A short-lived token validation cache could improve performance in a production system, but it was intentionally not added to avoid changing token revocation semantics.
+- Retries are limited to idempotent outbound HTTP methods to avoid duplicate writes.
+- CQRS was considered, but the current service-based structure remains simpler and more readable for this solution size.
