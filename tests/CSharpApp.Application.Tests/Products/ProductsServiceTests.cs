@@ -70,6 +70,6 @@ public class ProductsServiceTests
             Products = "products"
         });
 
-        return new ProductsService(httpClient, settings, NullLogger<ProductsService>.Instance);
+        return new ProductsService(httpClient, settings);
     }
 }

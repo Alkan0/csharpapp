@@ -111,12 +111,13 @@ public static class HttpConfiguration
     {
         logger.LogWarning(
             outcome.Exception,
-            "Retrying third-party HTTP request. Method: {Method}, Uri: {Uri}, RetryAttempt: {RetryAttempt}, DelayMilliseconds: {DelayMilliseconds}, StatusCode: {StatusCode}",
+            "Outgoing third-party HTTP request retry scheduled. Method: {Method}, Uri: {Uri}, RetryAttempt: {RetryAttempt}, DelayMilliseconds: {DelayMilliseconds}, StatusCode: {StatusCode}, LogType: {LogType}",
             request.Method,
             request.RequestUri,
             retryAttempt,
             delay.TotalMilliseconds,
-            outcome.Result?.StatusCode);
+            outcome.Result?.StatusCode,
+            "OutgoingThirdPartyRetry");
     }
 
     private static TimeSpan GetRetryDelay(int sleepDuration, int retryAttempt)

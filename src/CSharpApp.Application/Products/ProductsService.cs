@@ -4,14 +4,11 @@ public class ProductsService : IProductsService
 {
     private readonly HttpClient _httpClient;
     private readonly RestApiSettings _restApiSettings;
-    private readonly ILogger<ProductsService> _logger;
 
-    public ProductsService(HttpClient httpClient, IOptions<RestApiSettings> restApiSettings, 
-        ILogger<ProductsService> logger)
+    public ProductsService(HttpClient httpClient, IOptions<RestApiSettings> restApiSettings)
     {
         _httpClient = httpClient;
         _restApiSettings = restApiSettings.Value;
-        _logger = logger;
     }
 
     public async Task<IReadOnlyCollection<Product>> GetProducts()
@@ -30,7 +27,6 @@ public class ProductsService : IProductsService
         var response = await _httpClient.GetAsync($"{_restApiSettings.Products}/{id}");
         if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
         {
-            _logger.LogInformation("Product {ProductId} was not found", id);
             return null;
         }
         response.EnsureSuccessStatusCode();
@@ -45,8 +41,6 @@ public class ProductsService : IProductsService
         if (response.StatusCode == HttpStatusCode.BadRequest)
         {
             var error = await response.Content.ReadAsStringAsync();
-
-            _logger.LogWarning("Products API rejected product creation request: {Error}", error);
 
             throw new HttpRequestException(
                 $"Products API rejected the create product request: {error}",

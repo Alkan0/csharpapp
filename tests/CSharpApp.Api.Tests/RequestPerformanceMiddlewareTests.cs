@@ -34,11 +34,94 @@ public sealed class RequestPerformanceMiddlewareTests
 
         var entry = Assert.Single(logger.Entries);
         Assert.Equal(LogLevel.Information, entry.LogLevel);
-        Assert.Contains("responded 204", entry.Message);
+        Assert.Contains("completed", entry.Message);
+        Assert.Equal("completed", entry.Properties["EventName"]);
+        Assert.Equal(204, entry.Properties["StatusCode"]);
         Assert.Equal("HTTP: GET /api/v1/products", entry.Properties["EndpointName"]);
         Assert.Equal(true, entry.Properties["IsAuthenticated"]);
         Assert.Equal("123", entry.Properties["UserId"]);
         Assert.Equal("localhost:5225", entry.Properties["RequestHost"]);
+        Assert.Equal("IncomingRequest", entry.Properties["LogType"]);
+        Assert.Equal(context.TraceIdentifier, entry.Properties["RequestId"]);
+        Assert.Equal(context.TraceIdentifier, entry.Properties["CorrelationId"]);
+        Assert.Equal(context.TraceIdentifier, context.Response.Headers["X-Correlation-ID"].ToString());
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenClientErrorOccurs_LogsInformation()
+    {
+        var logger = new TestLogger<RequestPerformanceMiddleware>();
+        var context = new DefaultHttpContext();
+        context.Request.Method = HttpMethods.Get;
+        context.Request.Path = "/api/v1/auth/profile";
+        context.Request.Host = new HostString("localhost:5225");
+
+        var middleware = new RequestPerformanceMiddleware(
+            next: httpContext =>
+            {
+                httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            },
+            logger);
+
+        await middleware.InvokeAsync(context);
+
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Information, entry.LogLevel);
+        Assert.Equal("completed", entry.Properties["EventName"]);
+        Assert.Equal(401, entry.Properties["StatusCode"]);
+        Assert.Equal("IncomingRequest", entry.Properties["LogType"]);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenCorrelationHeaderExists_UsesItInLogAndResponse()
+    {
+        var logger = new TestLogger<RequestPerformanceMiddleware>();
+        var context = new DefaultHttpContext();
+        context.Request.Method = HttpMethods.Get;
+        context.Request.Path = "/api/v1/products";
+        context.Request.Host = new HostString("localhost:5225");
+        context.Request.Headers["X-Correlation-ID"] = "external-correlation-id";
+
+        var middleware = new RequestPerformanceMiddleware(
+            next: httpContext =>
+            {
+                httpContext.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            },
+            logger);
+
+        await middleware.InvokeAsync(context);
+
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal("external-correlation-id", entry.Properties["CorrelationId"]);
+        Assert.Equal("external-correlation-id", context.Response.Headers["X-Correlation-ID"].ToString());
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenRouteHasConstrainedId_ReplacesIdInEndpointName()
+    {
+        var logger = new TestLogger<RequestPerformanceMiddleware>();
+        var context = new DefaultHttpContext();
+        context.Request.Method = HttpMethods.Get;
+        context.Request.Path = "/api/v1/products/42";
+        context.Request.Host = new HostString("localhost:5225");
+        context.Request.RouteValues["version"] = "1";
+        context.Request.RouteValues["id"] = "42";
+        context.SetEndpoint(new Endpoint(_ => Task.CompletedTask, EndpointMetadataCollection.Empty, "HTTP: GET /api/v{version:apiVersion}/products/{id:int}"));
+
+        var middleware = new RequestPerformanceMiddleware(
+            next: httpContext =>
+            {
+                httpContext.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            },
+            logger);
+
+        await middleware.InvokeAsync(context);
+
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal("HTTP: GET /api/v1/products/42", entry.Properties["EndpointName"]);
     }
 
     [Fact]
@@ -62,9 +145,14 @@ public sealed class RequestPerformanceMiddlewareTests
         var entry = Assert.Single(logger.Entries);
         Assert.Equal(LogLevel.Error, entry.LogLevel);
         Assert.Same(expectedException, entry.Exception);
-        Assert.Contains("failed 500", entry.Message);
+        Assert.Contains("failed", entry.Message);
+        Assert.Equal("failed", entry.Properties["EventName"]);
+        Assert.Equal(500, entry.Properties["StatusCode"]);
         Assert.Equal(false, entry.Properties["IsAuthenticated"]);
         Assert.Equal("localhost:5225", entry.Properties["RequestHost"]);
+        Assert.Equal("IncomingRequest", entry.Properties["LogType"]);
+        Assert.Equal(context.TraceIdentifier, entry.Properties["RequestId"]);
+        Assert.Equal(context.TraceIdentifier, entry.Properties["CorrelationId"]);
     }
 
     private sealed class TestLogger<T> : ILogger<T>

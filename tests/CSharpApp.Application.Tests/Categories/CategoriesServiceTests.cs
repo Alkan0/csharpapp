@@ -120,6 +120,6 @@ public class CategoriesServiceTests
             Categories = "categories"
         });
 
-        return new CategoriesService(httpClient, settings, NullLogger<CategoriesService>.Instance);
+        return new CategoriesService(httpClient, settings);
     }
 }

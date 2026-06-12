@@ -6,16 +6,13 @@ public class AuthService : IAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly RestApiSettings _restApiSettings;
-    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         HttpClient httpClient,
-        IOptions<RestApiSettings> restApiSettings,
-        ILogger<AuthService> logger)
+        IOptions<RestApiSettings> restApiSettings)
     {
         _httpClient = httpClient;
         _restApiSettings = restApiSettings.Value;
-        _logger = logger;
     }
 
     public async Task<AuthTokenResponse?> Login(LoginRequest request)
@@ -23,7 +20,6 @@ public class AuthService : IAuthService
         var response = await _httpClient.PostAsJsonAsync(_restApiSettings.Auth, request);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            _logger.LogWarning("Third-party auth rejected login request.");
             return null;
         }
         response.EnsureSuccessStatusCode();
@@ -37,7 +33,6 @@ public class AuthService : IAuthService
         var response = await _httpClient.PostAsJsonAsync(_restApiSettings.AuthRefreshToken, request);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            _logger.LogWarning("Third-party auth rejected refresh token request.");
             return null;
         }
         response.EnsureSuccessStatusCode();
@@ -53,7 +48,6 @@ public class AuthService : IAuthService
         var response = await _httpClient.SendAsync(request);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            _logger.LogWarning("Third-party auth rejected profile request.");
             return null;
         }
         response.EnsureSuccessStatusCode();
