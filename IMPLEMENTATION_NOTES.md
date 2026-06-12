@@ -23,6 +23,7 @@ The configuration includes:
 
 - a shared third-party API base URL
 - handler lifetime configuration
+- retry count and retry delay configuration
 - typed clients for products, categories, and auth services
 
 The `IHttpClientFactory` setup is configured in `CSharpApp.Infrastructure/Configuration/HttpConfiguration.cs` through `services.AddHttpClient(...)`.
@@ -43,9 +44,15 @@ services.AddHttpClient<IAuthService, AuthService>(...)
 
 This means the .NET `IHttpClientFactory` creates and manages the `HttpClient` instances that are injected into the application services.
 
-The third-party API base URL comes from `RestApiSettings.BaseUrl`, and the HTTP handler lifetime comes from `HttpClientSettings.LifeTime`.
+The third-party API base URL comes from `RestApiSettings.BaseUrl`. HTTP client behavior is configured from `HttpClientSettings`:
 
-A generic retry policy was intentionally not added. Retries should be applied carefully based on request semantics, because retrying non-idempotent operations such as `POST /products` or `POST /categories` could create duplicate resources.
+- `LifeTime`: typed HTTP client handler lifetime in minutes
+- `RetryCount`: number of retry attempts for transient upstream failures
+- `SleepDuration`: base retry delay in milliseconds
+
+Retries are intentionally applied only to idempotent HTTP methods. Non-idempotent operations such as `POST /products` or `POST /categories` are not retried, because retrying them could create duplicate resources.
+
+Retry attempts are logged as structured infrastructure events with `LogType = OutgoingThirdPartyRetry`.
 
 ### CQRS Refactor
 
@@ -130,13 +137,17 @@ Implemented endpoints:
 - `POST /api/v1/auth/refresh-token`
 - `GET /api/v1/auth/profile`
 
-The login endpoint forwards user credentials to the third-party auth API and returns both access and refresh tokens. The refresh-token endpoint forwards a caller-provided refresh token to the third-party API and returns the renewed token response. The profile endpoint requires a bearer token in the `Authorization` header and forwards that token to the third-party profile endpoint.
+The login endpoint forwards user credentials to the third-party auth API and returns both access and refresh tokens. The refresh-token endpoint forwards a caller-provided refresh token to the third-party API and returns the renewed token response.
+
+The profile endpoint requires a bearer token in the `Authorization` header. The custom `ThirdPartyBearerAuthenticationHandler` validates the token against the third-party profile endpoint, creates claims from the returned profile, and lets the endpoint return the authenticated profile from those claims.
+
+Swagger/OpenAPI includes a bearer security definition so the protected profile endpoint can be exercised from Swagger UI.
 
 Server-side token caching was not added intentionally. The product and category endpoints used by this application do not require third-party authorization, and the auth endpoints follow the third-party API contract by accepting caller-provided credentials, access tokens, and refresh tokens instead of storing or reusing a configured service token internally.
 
-### Request Performance Logging
+### Request Logging and Correlation
 
-A custom middleware was added to measure and log API request performance.
+A custom middleware was added to log one structured API boundary event per incoming request.
 
 The middleware logs:
 
@@ -144,6 +155,25 @@ The middleware logs:
 - request path
 - status code
 - elapsed time in milliseconds
+- endpoint display name with resolved route values, for example `HTTP: GET /api/v1/categories/42`
+- authenticated state and user id when available
+- request host
+- `CorrelationId`
+- ASP.NET Core `RequestId`
+- distributed trace id and span id
+- `LogType = IncomingRequest`
+
+The middleware supports the `X-Correlation-ID` request header. If the caller provides it, the same value is included in the structured log and echoed back in the response header. If it is not provided, the middleware falls back to the ASP.NET Core request identifier.
+
+The middleware also opens a logging scope with the correlation and request fields, so downstream framework/infrastructure logs can be tied back to the same incoming request.
+
+Expected and handled outcomes such as `400`, `401`, and `404` are logged only as request summary events. Application services do not emit additional logs for those expected outcomes, which avoids duplicate logs for a single request. Unhandled exceptions and `5xx` responses are logged as errors by the request middleware.
+
+The third-party bearer authentication handler is configured to suppress framework-level auth challenge information logs:
+
+```json
+"CSharpApp.Api.Auth.ThirdPartyBearerAuthenticationHandler": "Warning"
+```
 
 Serilog was configured for structured console logging and rolling daily file logs.
 
