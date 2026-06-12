@@ -128,6 +128,6 @@ public class AuthServiceTests
             AuthProfile = "auth/profile"
         });
 
-        return new AuthService(httpClient, settings, NullLogger<AuthService>.Instance);
+        return new AuthService(httpClient, settings);
     }
 }

@@ -4,16 +4,13 @@ public class CategoriesService : ICategoriesService
 {
     private readonly HttpClient _httpClient;
     private readonly RestApiSettings _restApiSettings;
-    private readonly ILogger<CategoriesService> _logger;
 
     public CategoriesService(
         HttpClient httpClient,
-        IOptions<RestApiSettings> restApiSettings,
-        ILogger<CategoriesService> logger)
+        IOptions<RestApiSettings> restApiSettings)
     {
         _httpClient = httpClient;
         _restApiSettings = restApiSettings.Value;
-        _logger = logger;
     }
 
     public async Task<IReadOnlyCollection<Category>> GetCategories()
@@ -31,7 +28,6 @@ public class CategoriesService : ICategoriesService
         var response = await _httpClient.GetAsync($"{_restApiSettings.Categories}/{id}");
         if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
         {
-            _logger.LogInformation("Category {CategoryId} was not found", id);
             return null;
         }
         response.EnsureSuccessStatusCode();
@@ -46,7 +42,6 @@ public class CategoriesService : ICategoriesService
         if (response.StatusCode == HttpStatusCode.BadRequest)
         {
             var error = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning("Categories API rejected category creation request: {Error}", error);
             throw new HttpRequestException(
                 $"Categories API rejected the create category request: {error}",
                 null,
@@ -62,8 +57,6 @@ public class CategoriesService : ICategoriesService
         var response = await _httpClient.PutAsJsonAsync($"{_restApiSettings.Categories}/{id}", request);
         if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
         {
-            var error = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning("Categories API rejected category update request for {CategoryId}: {Error}", id, error);
             return null;
         }
         response.EnsureSuccessStatusCode();
@@ -77,7 +70,6 @@ public class CategoriesService : ICategoriesService
         var response = await _httpClient.DeleteAsync($"{_restApiSettings.Categories}/{id}");
         if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
         {
-            _logger.LogInformation("Category {CategoryId} was not found or could not be deleted", id);
             return false;
         }
 
