@@ -36,27 +36,21 @@ public static class AuthEndpoints
         .HasApiVersion(1.0)
         .WithTags("Auth");
 
-        versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/auth/profile", async (HttpRequest request, ISender sender) =>
+        versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/auth/profile", (ClaimsPrincipal user) =>
         {
-            var authorization = request.Headers.Authorization.ToString();
-            if (string.IsNullOrWhiteSpace(authorization) || !authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            var profile = new AuthProfileResponse
             {
-                return Results.Problem(
-                    statusCode: StatusCodes.Status401Unauthorized,
-                    title: "Authentication required",
-                    detail: "A bearer token is required to access the auth profile endpoint.");
-            }
+                Id = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null,
+                Email = user.FindFirstValue(ClaimTypes.Email),
+                Name = user.FindFirstValue(ClaimTypes.Name),
+                Role = user.FindFirstValue(ClaimTypes.Role),
+                Avatar = user.FindFirstValue(ThirdPartyBearerAuthenticationDefaults.AvatarClaimType)
+            };
 
-            var accessToken = authorization["Bearer ".Length..].Trim();
-            var profile = await sender.Send(new GetAuthProfileQuery(accessToken));
-            return profile is null
-                ? Results.Problem(
-                    statusCode: StatusCodes.Status401Unauthorized,
-                    title: "Authentication failed",
-                    detail: "The third-party authentication service rejected the provided access token.")
-                : Results.Ok(profile);
+            return Results.Ok(profile);
         })
         .WithName("GetAuthProfile")
+        .RequireAuthorization()
         .HasApiVersion(1.0)
         .WithTags("Auth");
 

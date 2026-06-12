@@ -4,9 +4,40 @@ var logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configurat
 builder.Logging.ClearProviders().AddSerilog(logger);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var bearerScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Enter the third-party access token without the Bearer prefix.",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    };
+
+    options.AddSecurityDefinition(
+        ThirdPartyBearerAuthenticationDefaults.AuthenticationScheme,
+        bearerScheme);
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [
+            new OpenApiSecuritySchemeReference(
+                ThirdPartyBearerAuthenticationDefaults.AuthenticationScheme,
+                document,
+                null)
+        ] = []
+    });
+});
 builder.Services.AddDefaultConfiguration(builder.Configuration);
 builder.Services.AddHttpConfiguration(builder.Configuration);
+builder.Services
+    .AddAuthentication(ThirdPartyBearerAuthenticationDefaults.AuthenticationScheme)
+    .AddScheme<AuthenticationSchemeOptions, ThirdPartyBearerAuthenticationHandler>(
+        ThirdPartyBearerAuthenticationDefaults.AuthenticationScheme,
+        options => { });
+builder.Services.AddAuthorization();
 builder.Services.AddProblemDetails();
 builder.Services.AddApiVersioning(options =>
 {
@@ -32,7 +63,10 @@ if (app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 
+app.UseGlobalExceptionHandling();
 app.UseMiddleware<RequestPerformanceMiddleware>();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapHealthChecks("/health");
 app.MapProductEndpoints()
    .MapCategoryEndpoints()
