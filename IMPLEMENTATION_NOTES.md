@@ -47,7 +47,7 @@ The retry policy handles:
 - `5xx` responses
 - `429 Too Many Requests`
 
-Retry delays use exponential backoff based on `SleepDuration`. Retry attempts are logged through the same `ILogger`/Serilog pipeline used by the rest of the application.
+Retry delays use exponential backoff based on `SleepDuration`. Retry attempts are logged through the same `ILogger`/Serilog pipeline used by the rest of the application with `LogType = OutgoingThirdPartyRetry`.
 
 ## Products API
 
@@ -157,9 +157,9 @@ Swagger also includes Bearer authentication support. In Swagger UI:
 4. Paste the token without the `Bearer` prefix.
 5. Call protected endpoints.
 
-## Request Performance Logging
+## Request Logging and Correlation
 
-A custom middleware measures and logs request performance.
+A custom middleware logs one structured API boundary event per incoming request.
 
 Logged fields include:
 
@@ -167,24 +167,40 @@ Logged fields include:
 - request path
 - response status code
 - elapsed time in milliseconds
-- concrete endpoint name
+- concrete endpoint name with resolved route values
 - authentication state
 - user id when available
 - request host
+- `CorrelationId`
+- ASP.NET Core `RequestId`
+- distributed trace id and span id
+- `LogType = IncomingRequest`
 
-Endpoint names replace the route version token with the concrete version, so logs show values such as:
+Endpoint names replace route tokens with concrete values, so logs show values such as:
 
 ```text
-HTTP: GET /api/v1/products
+HTTP: GET /api/v1/categories/42
 ```
 
 instead of:
 
 ```text
-HTTP: GET /api/v{version:apiVersion}/products
+HTTP: GET /api/v{version:apiVersion}/categories/{id:int}
 ```
 
-The middleware also logs failed requests as errors and rethrows the exception so the global exception handler can return the correct response.
+The middleware supports the `X-Correlation-ID` request header. If a caller provides it, the same value is included in logs and returned in the response header. If it is not provided, the middleware falls back to the ASP.NET Core request identifier.
+
+The middleware opens a logging scope with request and correlation fields, so framework and infrastructure logs can be tied back to the same incoming request.
+
+Expected and handled outcomes such as `400`, `401`, and `404` are logged only as request summary events. Application services do not emit additional logs for those expected outcomes, which avoids duplicate logs for a single request.
+
+Unhandled exceptions and `5xx` responses are logged as errors by the request middleware and then rethrown so the global exception handler can return the correct response.
+
+The third-party bearer authentication handler is configured to suppress framework-level auth challenge information logs:
+
+```json
+"CSharpApp.Api.Auth.ThirdPartyBearerAuthenticationHandler": "Warning"
+```
 
 ## Global Exception Handling
 
